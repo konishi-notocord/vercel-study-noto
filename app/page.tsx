@@ -1,58 +1,58 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { ConnectSupabaseSteps } from "@/components/tutorial/connect-supabase-steps";
-import { SignUpUserSteps } from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/lib/utils";
-import Link from "next/link";
-import { Suspense } from "react";
+// ▼ Vercelのビルドエラー対策
+export const dynamic = "force-dynamic";
 
-export default function Home() {
+import { createClient } from "@/lib/supabase/server"; // ※環境に合わせて utils か lib か確認
+
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: posts } = await supabase.from("posts").select().order('created_at', { ascending: false });
+
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>Next.js Supabase Starter</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
-            </div>
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
-              <Suspense>
-                <AuthButton />
-              </Suspense>
-            )}
-          </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          <Hero />
-          <main className="flex-1 flex flex-col gap-6 px-4">
-            <h2 className="font-medium text-xl mb-4">Next steps</h2>
-            {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
-          </main>
+    <div className="min-h-screen bg-gray-100">
+      {/* ▼ ヘッダー */}
+      <header className="bg-indigo-600 text-white p-6 shadow-md">
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold">📢 社内目安箱 (Kaizen Box)</h1>
+          <button className="bg-white text-indigo-600 px-4 py-2 rounded-lg font-bold hover:bg-gray-200 transition">
+            新規投稿
+          </button>
         </div>
+      </header>
 
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
-            >
-              Supabase
-            </a>
-          </p>
-          <ThemeSwitcher />
-        </footer>
-      </div>
-    </main>
+      {/* ▼ メインコンテンツ */}
+      <main className="container mx-auto p-6">
+        <h2 className="text-xl text-gray-700 mb-6 border-l-4 border-indigo-500 pl-4">
+          みんなの投稿一覧
+        </h2>
+
+        {/* ▼ カード型のリスト表示 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {posts?.map((post) => (
+            <div key={post.id} className="bg-white p-6 rounded-lg shadow-lg hover:shadow-xl transition duration-300">
+              <div className="flex items-center mb-4">
+                <div className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold mr-3">
+                  📝
+                </div>
+                {/* 日付があれば表示、なければ仮表示 */}
+                <p className="text-gray-500 text-sm">
+                  {post.created_at ? new Date(post.created_at).toLocaleDateString() : 'No Date'}
+                </p>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">
+                {post.title}
+              </h3>
+              <p className="text-gray-400 text-sm">ID: {post.id}</p>
+            </div>
+          ))}
+
+          {/* データがない場合 */}
+          {(!posts || posts.length === 0) && (
+            <p className="text-gray-500 col-span-full text-center py-10">
+              まだ投稿がありません。
+            </p>
+          )}
+        </div>
+      </main>
+    </div>
   );
 }
